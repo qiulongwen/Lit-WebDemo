@@ -84,12 +84,60 @@ echo "$GITHUB_TOKEN" | docker login ghcr.io -u USERNAME --password-stdin
 docker pull ghcr.io/qiulongwen/lit-webdemo:1.0.0-79e915d
 ```
 
+## Runtime config (`config.js`)
+
+The SPA loads `/config.js` **before** the app bundle. That file sets
+`window.__APP_CONFIG__` (see `public/config.js`). The Vue app reads it via
+`src/utils/appConfig.ts`, so API base URL and similar values can change at
+deploy time **without rebuilding the image**.
+
+Default keys:
+
+| Key | Purpose |
+| --- | --- |
+| `apiBaseUrl` | Backend API origin (empty locally) |
+| `appEnv` | Environment label (`local`, `staging`, …) |
+
+### Kubernetes ConfigMap mount
+
+Mount a ConfigMap file over the nginx static path:
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: lit-webdemo-config
+data:
+  config.js: |
+    window.__APP_CONFIG__ = {
+      apiBaseUrl: 'https://api.example.com',
+      appEnv: 'staging',
+    };
+---
+# On the Deployment pod volumeMounts / volumes:
+# volumeMounts:
+#   - name: app-config
+#     mountPath: /usr/share/nginx/html/config.js
+#     subPath: config.js
+#     readOnly: true
+# volumes:
+#   - name: app-config
+#     configMap:
+#       name: lit-webdemo-config
+```
+
+- **Mount path:** `/usr/share/nginx/html/config.js`
+- **ConfigMap key:** `config.js` (use `subPath: config.js`)
+- nginx serves `/config.js` with `Cache-Control: no-store` so browsers pick up updates after pod refresh
+
 ## Project layout
 
 ```text
+├── public/config.js          # runtime config (ConfigMap override target)
 ├── src/                      # Vue 3 application
 ├── Dockerfile                # multi-stage: Node build → nginx serve
 ├── nginx.conf                # SPA-friendly static server config
 ├── .dockerignore
 └── .github/workflows/        # GHCR publish workflow
 ```
+
