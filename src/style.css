@@ -79,6 +79,14 @@ body {
   animation: fade 0.8s ease 0.25s both;
 }
 
+.config-hint code {
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 0.95em;
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+  background: rgba(15, 28, 36, 0.06);
+}
+
 .actions {
   display: flex;
   flex-wrap: wrap;
