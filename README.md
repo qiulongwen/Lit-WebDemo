@@ -39,22 +39,22 @@ Workflow: [`.github/workflows/docker-publish.yml`](.github/workflows/docker-publ
 | Event | Behavior |
 | --- | --- |
 | Pull request targeting `main` | Builds the image (does **not** push) |
-| Push to `main` | Builds and pushes `sha-<shortsha>` and the `package.json` version |
-| Push of tag `v*` (e.g. `v1.0.0`) | Same SHA tag, plus semver from the git tag (aligned with `package.json` when versions match) |
+| Push to `main` or tag `v*` | Builds and pushes **one** tag: `<version>-<shortsha>` |
 
 ### Image name and tags
 
 ```text
-ghcr.io/qiulongwen/lit-webdemo:<tag>
+ghcr.io/qiulongwen/lit-webdemo:<version>-<commit id>
 ```
 
-Repository names are lowercased for GHCR. **`latest` is not used.**
+Repository names are lowercased for GHCR. **`latest` is not used.** There is only one tag form:
 
-| Tag | Source |
+| Part | Source |
 | --- | --- |
-| `sha-<shortsha>` | Git commit (e.g. `sha-1cdceb1`) |
-| `<semver>` | `version` from `package.json` with **no `v` prefix** (e.g. `1.0.0`) |
-| `<semver>` (tag push) | From git tag `v1.0.0` → image tag `1.0.0` (same form; keep `package.json` and the git tag in sync) |
+| `<version>` | `version` from `package.json` (no `v` prefix), e.g. `1.0.0` |
+| `<commit id>` | Short git SHA (7 chars), e.g. `79e915d` |
+
+Example: `ghcr.io/qiulongwen/lit-webdemo:1.0.0-79e915d`
 
 ### Secrets and permissions
 
@@ -72,23 +72,16 @@ Pulling a private package requires a PAT (or `GITHUB_TOKEN` in Actions) with `re
 
 ### Pull and run the published image
 
-Prefer a commit or version tag (not `latest`):
-
 ```bash
-# By package.json / release version
-docker pull ghcr.io/qiulongwen/lit-webdemo:1.0.0
-docker run --rm -p 8080:80 ghcr.io/qiulongwen/lit-webdemo:1.0.0
-
-# By commit
-docker pull ghcr.io/qiulongwen/lit-webdemo:sha-1cdceb1
-docker run --rm -p 8080:80 ghcr.io/qiulongwen/lit-webdemo:sha-1cdceb1
+docker pull ghcr.io/qiulongwen/lit-webdemo:1.0.0-79e915d
+docker run --rm -p 8080:80 ghcr.io/qiulongwen/lit-webdemo:1.0.0-79e915d
 ```
 
 If the package is private:
 
 ```bash
 echo "$GITHUB_TOKEN" | docker login ghcr.io -u USERNAME --password-stdin
-docker pull ghcr.io/qiulongwen/lit-webdemo:1.0.0
+docker pull ghcr.io/qiulongwen/lit-webdemo:1.0.0-79e915d
 ```
 
 ## Project layout
