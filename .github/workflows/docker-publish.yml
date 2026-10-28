@@ -36,17 +36,23 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Read package.json version
+        id: pkg
+        run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+
       - name: Extract metadata (tags, labels)
         id: meta
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          # No `latest` tag. Convention:
+          # - sha-<shortsha> from the commit
+          # - <semver> from package.json (e.g. 1.0.0, no "v" prefix)
+          # - on git tags v*: also {{version}} from the tag (same form when aligned)
           tags: |
-            type=raw,value=latest,enable={{is_default_branch}}
             type=sha,prefix=sha-
-            type=ref,event=branch
+            type=raw,value=${{ steps.pkg.outputs.version }}
             type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
 
       - name: Build and push
         uses: docker/build-push-action@v6

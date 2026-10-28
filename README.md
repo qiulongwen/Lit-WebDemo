@@ -39,8 +39,8 @@ Workflow: [`.github/workflows/docker-publish.yml`](.github/workflows/docker-publ
 | Event | Behavior |
 | --- | --- |
 | Pull request targeting `main` | Builds the image (does **not** push) |
-| Push to `main` | Builds and pushes tags including `latest` and `sha-<shortsha>` |
-| Push of tag `v*` (e.g. `v1.0.0`) | Builds and pushes semver tags |
+| Push to `main` | Builds and pushes `sha-<shortsha>` and the `package.json` version |
+| Push of tag `v*` (e.g. `v1.0.0`) | Same SHA tag, plus semver from the git tag (aligned with `package.json` when versions match) |
 
 ### Image name and tags
 
@@ -48,11 +48,13 @@ Workflow: [`.github/workflows/docker-publish.yml`](.github/workflows/docker-publ
 ghcr.io/qiulongwen/lit-webdemo:<tag>
 ```
 
-Repository names are lowercased for GHCR. Common tags:
+Repository names are lowercased for GHCR. **`latest` is not used.**
 
-- `latest` — latest build from the default branch (`main`)
-- `sha-<shortsha>` — commit SHA tag on every push to `main`
-- `1.0.0`, `1.0` — from annotated/semver tags like `v1.0.0`
+| Tag | Source |
+| --- | --- |
+| `sha-<shortsha>` | Git commit (e.g. `sha-1cdceb1`) |
+| `<semver>` | `version` from `package.json` with **no `v` prefix** (e.g. `1.0.0`) |
+| `<semver>` (tag push) | From git tag `v1.0.0` → image tag `1.0.0` (same form; keep `package.json` and the git tag in sync) |
 
 ### Secrets and permissions
 
@@ -70,17 +72,23 @@ Pulling a private package requires a PAT (or `GITHUB_TOKEN` in Actions) with `re
 
 ### Pull and run the published image
 
+Prefer a commit or version tag (not `latest`):
+
 ```bash
-# Public package (or after docker login for private)
-docker pull ghcr.io/qiulongwen/lit-webdemo:latest
-docker run --rm -p 8080:80 ghcr.io/qiulongwen/lit-webdemo:latest
+# By package.json / release version
+docker pull ghcr.io/qiulongwen/lit-webdemo:1.0.0
+docker run --rm -p 8080:80 ghcr.io/qiulongwen/lit-webdemo:1.0.0
+
+# By commit
+docker pull ghcr.io/qiulongwen/lit-webdemo:sha-1cdceb1
+docker run --rm -p 8080:80 ghcr.io/qiulongwen/lit-webdemo:sha-1cdceb1
 ```
 
 If the package is private:
 
 ```bash
 echo "$GITHUB_TOKEN" | docker login ghcr.io -u USERNAME --password-stdin
-docker pull ghcr.io/qiulongwen/lit-webdemo:latest
+docker pull ghcr.io/qiulongwen/lit-webdemo:1.0.0
 ```
 
 ## Project layout
